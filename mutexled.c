@@ -1,6 +1,6 @@
 #include "RTE_Components.h"
 #include CMSIS_device_header
-#include "cmsis_os2.h"
+#include "cmsis_os.h"
 #include "stm32f4xx.h"
 #include "Board_LED.h"
 
@@ -8,9 +8,24 @@
 #define Common_LED 1
 #define Child_LED 2
 
+void Child1(void const *argument);
+void Child2(void const *argument);
+void get1(void const *argument);
+void get2(void const *argument);
+
+
 int count=0;
-osSemaphoreId_t ID1,ID2,S_ID;
-osStatus_t shm;
+osThreadId ID1,ID2;
+
+osThreadDef (Child1, osPriorityNormal, 1, 0);         // thread object
+osThreadDef (Child2, osPriorityNormal, 1, 0);         // thread object
+osThreadDef (get1, osPriorityNormal, 1, 0);         // thread object
+osThreadDef (get2, osPriorityNormal, 1, 0);         // thread object
+
+osSemaphoreId S_ID;
+osSemaphoreDef(smp);
+
+//osStatus shm;
 int f1=0,f2=0;
 
 
@@ -18,78 +33,37 @@ void myDelay(int i){
 	while(i--);
 }
 
-
-
-void get2(void *argument)
-{
-	f2=1;
-	
-	int i=5;
-	while (i--){
-	LED_On(Common_LED);
-		myDelay(500000);
-		LED_Off(Common_LED);
-		myDelay(500000);
-}
-	osSemaphoreRelease(S_ID);
-	f2=0;
-	osThreadExit();
-}
-
-void get1(void *argument)
-{
-	f1=1;
-	int i=5;
-	while (i--){
-	LED_On(Common_LED);
-		myDelay(78498);
-		LED_Off(Common_LED);
-		myDelay(78498);
-}
-	osSemaphoreRelease(S_ID);
-	f1=0;
-	osThreadExit();
-}
-	
-
-void Child1(void *argument)
-{
-	
-	
-	while(1){
-	if(f1==0){
-	shm = osSemaphoreAcquire(S_ID,0);
-	if(shm == osOK)
-	{
-		osThreadNew(get1,NULL,NULL);
-	}
-	}
-	
-		
-	LED_On(Child_LED);
-	myDelay(100000);
-	LED_Off(Child_LED);
-	myDelay(100000);
+void child2 (void const *argument) { 
+	for (;;) {
+		if(osSemaphoreWait(sem_id,osWaitForever)>0){
+				int i = 5;
+				while (i--){
+					LED_On(LED_shared);
+					LED_On(LED_child1);
+					my_delay(DELAY1);
+					LED_Off(LED_shared);
+					LED_Off(LED_child1);
+					my_delay(DELAY1);
+				}
+				osSemaphoreRelease(sem_id);
+		}
 	}
 }
 
-
-void Child2(void *argument)
-{
-	while(1){
-
-	if(f2 == 0){
-		
-	shm = osSemaphoreAcquire(S_ID,0);
-	if(shm == osOK)
-	{
-		osThreadNew(get2,NULL,NULL);
-	}}
-	
-	LED_On(Parent_LED);
-	myDelay(500000);
-	LED_Off(Parent_LED);
-	myDelay(500000);
+void child1(void const *arguments){
+	for (;;) {
+		if(osSemaphoreWait(sem_id,osWaitForever)>0){
+				int i = 5;
+				while (i--){
+					LED_On(LED_shared);
+					LED_On(LED_child2);
+					my_delay(DELAY2);
+					LED_Off(LED_shared);
+					LED_Off(LED_child2);
+					my_delay(DELAY2);
+				}
+				osSemaphoreRelease(sem_id);
+		}
 	}
 }
 
@@ -98,10 +72,12 @@ int main()
 	
 	LED_Initialize();
 	SystemCoreClockUpdate();
+	
+
 	osKernelInitialize();
-	S_ID = osSemaphoreNew(1,1,NULL);
-	ID1 = osThreadNew(Child1,NULL,NULL);
-	ID2 = osThreadNew(Child2,NULL,NULL);
+	S_ID = osSemaphoreCreate (osSemaphore(smp), 1);
+	ID1 = osThreadCreate(osThread(Child1),NULL);
+	ID2 = osThreadCreate(osThread(Child2),NULL);
 	osKernelStart();
 	while(1);
 	
