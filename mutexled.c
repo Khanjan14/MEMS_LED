@@ -35,34 +35,34 @@ void myDelay(int i){
 
 void child2 (void const *argument) { 
 	for (;;) {
-		if(osSemaphoreWait(sem_id,osWaitForever)>0){
+		if(osSemaphoreWait(S_ID,osWaitForever)>0){
 				int i = 5;
 				while (i--){
-					LED_On(LED_shared);
-					LED_On(LED_child1);
-					my_delay(DELAY1);
-					LED_Off(LED_shared);
-					LED_Off(LED_child1);
-					my_delay(DELAY1);
+					LED_On(Common_LED);
+					LED_On(Parent_LED);
+					my_delay(1000000);
+					LED_Off(Common_LED);
+					LED_Off(Parent_LED);
+					my_delay(1000000);
 				}
-				osSemaphoreRelease(sem_id);
+				osSemaphoreRelease(S_ID);
 		}
 	}
 }
 
 void child1(void const *arguments){
 	for (;;) {
-		if(osSemaphoreWait(sem_id,osWaitForever)>0){
+		if(osSemaphoreWait(S_ID,osWaitForever)>0){
 				int i = 5;
 				while (i--){
-					LED_On(LED_shared);
-					LED_On(LED_child2);
-					my_delay(DELAY2);
-					LED_Off(LED_shared);
-					LED_Off(LED_child2);
-					my_delay(DELAY2);
+					LED_On(Common_LED);
+					LED_On(Child_LED);
+					my_delay(2000000);
+					LED_Off(Common_LED);
+					LED_Off(Child_LED);
+					my_delay(2000000);
 				}
-				osSemaphoreRelease(sem_id);
+				osSemaphoreRelease(S_ID);
 		}
 	}
 }
